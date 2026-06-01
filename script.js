@@ -46,6 +46,9 @@ const chatMessagesEl = document.getElementById("chatMessages");
 const chatInputEl = document.getElementById("chatInput");
 const chatSendButton = document.getElementById("chatSendButton");
 const adminChatMessagesEl = document.getElementById("adminChatMessages");
+const adminChatInputEl = document.getElementById("adminChatInput");
+const adminChatSendButton = document.getElementById("adminChatSendButton");
+const adminChatRefreshButton = document.getElementById("adminChatRefreshButton");
 
 let currentUser = null;
 let authToken = null;
@@ -512,10 +515,14 @@ async function adminToggleMute(username, isMuted) {
 async function adminKickUser(username) {
     if (!confirm(`${username} ni out qilishni tasdiqlaysizmi?`)) return;
     try {
-        await apiRequest(`/api/admin/user/${encodeURIComponent(username)}/kick`, {
+        const response = await apiRequest(`/api/admin/user/${encodeURIComponent(username)}/kick`, {
             method: "POST",
         });
         alert(`${username} out qilindi.`);
+        if (currentUser && currentUser.username === username) {
+            logoutUser();
+            return;
+        }
         updateAdminUsers();
     } catch (error) {
         alert(error.message);
@@ -526,10 +533,14 @@ async function adminToggleBan(username, isBanned) {
     const endpoint = isBanned ? "unban" : "ban";
     if (!isBanned && !confirm(`${username} ni ban qilishni tasdiqlaysizmi?`)) return;
     try {
-        await apiRequest(`/api/admin/user/${encodeURIComponent(username)}/${endpoint}`, {
+        const response = await apiRequest(`/api/admin/user/${encodeURIComponent(username)}/${endpoint}`, {
             method: "POST",
         });
         alert(`${username} ${isBanned ? "unbanned" : "banned"} qilindi.`);
+        if (!isBanned && currentUser && currentUser.username === username) {
+            logoutUser();
+            return;
+        }
         updateAdminUsers();
     } catch (error) {
         alert(error.message);
@@ -591,6 +602,25 @@ async function sendChatMessage() {
     } catch (error) {
         alert(error.message);
     }
+}
+
+async function sendAdminChatMessage() {
+    const message = adminChatInputEl.value.trim();
+    if (!message) return;
+    try {
+        await apiRequest("/api/chat/send", {
+            method: "POST",
+            body: JSON.stringify({ message }),
+        });
+        adminChatInputEl.value = "";
+        loadChatMessages();
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
+function refreshAdminChat() {
+    loadChatMessages();
 }
 
 function startChatPolling() {
@@ -705,6 +735,13 @@ chatInputEl.addEventListener("keypress", (e) => {
         sendChatMessage();
     }
 });
+adminChatSendButton.addEventListener("click", sendAdminChatMessage);
+adminChatInputEl.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+        sendAdminChatMessage();
+    }
+});
+adminChatRefreshButton.addEventListener("click", refreshAdminChat);
 
 initializeAuthentication();
 showAuthForm("login");

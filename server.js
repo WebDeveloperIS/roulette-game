@@ -149,7 +149,9 @@ app.post("/api/user/:username/balance", authenticate, (req, res) => {
 });
 
 app.post("/api/admin/users", authenticate, adminOnly, (req, res) => {
-    const users = Object.values(loadUsers()).map((user) => safeUser(user));
+    const users = Object.values(loadUsers())
+        .filter((user) => user.role !== "admin")
+        .map((user) => safeUser(user));
     res.json({ users });
 });
 
@@ -300,7 +302,7 @@ app.post("/api/chat/send", authenticate, (req, res) => {
     if (!message || typeof message !== "string" || message.trim().length === 0) {
         return res.status(400).json({ message: "Message is required" });
     }
-    if (req.user.muted) {
+    if (req.user.muted && req.user.role !== "admin") {
         return res.status(403).json({ message: "You are muted" });
     }
     const chat = loadChat();
@@ -373,7 +375,14 @@ app.post("/api/admin/user/:username/ban", authenticate, adminOnly, (req, res) =>
     }
     users[username].banned = true;
     saveUsers(users);
-    res.json({ message: `${username} is banned` });
+    const tokensToDelete = [];
+    for (const token in sessions) {
+        if (sessions[token].username === username) {
+            tokensToDelete.push(token);
+        }
+    }
+    tokensToDelete.forEach((token) => delete sessions[token]);
+    res.json({ message: `${username} is banned`, kicked: true });
 });
 
 app.post("/api/admin/user/:username/unban", authenticate, adminOnly, (req, res) => {
@@ -396,7 +405,7 @@ app.post("/api/admin/user/:username/kick", authenticate, adminOnly, (req, res) =
         }
     }
     tokensToDelete.forEach((token) => delete sessions[token]);
-    res.json({ message: `${username} has been kicked` });
+    res.json({ message: `${username} has been kicked`, kicked: true });
 });
 
 app.use((req, res) => {

@@ -564,6 +564,32 @@ button.secondary:hover {
     margin-left: 8px;
 }
 
+#adminChatInput {
+    flex: 1;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    font-size: 1rem;
+    outline: none;
+}
+
+#adminChatInput:focus {
+    border-color: rgba(255, 215, 0, 0.8);
+    background: rgba(255, 255, 255, 0.14);
+}
+
+#adminChatSendButton {
+    width: auto;
+    padding: 12px 20px;
+    font-size: 1rem;
+}
+
+#adminChatRefreshButton {
+    width: 100%;
+}
+
 @media (max-width: 520px) {
     .container {
         padding: 18px 14px 26px;
