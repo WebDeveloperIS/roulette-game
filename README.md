@@ -23,6 +23,8 @@ This project now includes a simple Express backend for:
 - `server.js` serves the static game files and provides `/api/*` endpoints.
 - User data persists in `users.json` on the Render instance.
 - The frontend now uses AJAX requests to `/api` instead of localStorage-only auth.
+- Default admin account is available: `admin` / `admin`.
+- Admin can manage players, reset passwords, and adjust balances through the admin panel.
 
 ## Deploy to Render
 1. Push this folder to a Git repository (GitHub, GitLab, etc.).

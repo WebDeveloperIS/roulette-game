@@ -62,10 +62,44 @@
         </div>
 
         <div class="player-info" id="playerInfo" style="display:none;">
-            Player: <strong id="playerName">Guest</strong>
+            <div>
+                Player: <strong id="playerName">Guest</strong>
+                <small id="playerRole"></small>
+            </div>
             <div class="player-actions">
                 <button type="button" id="logoutButton" class="secondary small">Logout</button>
                 <button type="button" id="deleteAccountButton" class="secondary small danger">Delete Account</button>
+            </div>
+        </div>
+
+        <div class="admin-panel" id="adminPanel" style="display:none;">
+            <div class="admin-card">
+                <h2>Admin Panel</h2>
+                <div class="bet-row">
+                    <label>
+                        New player username
+                        <input type="text" id="adminCreateUsername" placeholder="Username" autocomplete="off">
+                    </label>
+                    <label>
+                        New player password
+                        <input type="password" id="adminCreatePassword" placeholder="Password" autocomplete="new-password">
+                    </label>
+                    <button type="button" id="adminCreateButton">Create Player</button>
+                </div>
+            </div>
+            <div class="admin-card">
+                <h3>Manage Players</h3>
+                <table id="adminUserTable">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Balance</th>
+                            <th>Role</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
             </div>
         </div>
 
@@ -75,7 +109,7 @@
             <strong id="balance">1000</strong>
         </div>
 
-        <div class="topup-card">
+        <div class="topup-card" id="topupCard">
             <div class="bet-row">
                 <label for="topupAmount">Top-up Amount</label>
                 <input type="number" id="topupAmount" placeholder="100" min="100" max="10000" value="100">

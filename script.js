@@ -15,15 +15,22 @@ const resetNewPasswordEl = document.getElementById("resetNewPassword");
 const resetPasswordButton = document.getElementById("resetPasswordButton");
 const playerInfo = document.getElementById("playerInfo");
 const playerNameEl = document.getElementById("playerName");
+const playerRoleEl = document.getElementById("playerRole");
 const logoutButton = document.getElementById("logoutButton");
 const deleteAccountButton = document.getElementById("deleteAccountButton");
 const leaderboardEl = document.getElementById("leaderboard");
+const adminPanel = document.getElementById("adminPanel");
+const adminCreateUsernameEl = document.getElementById("adminCreateUsername");
+const adminCreatePasswordEl = document.getElementById("adminCreatePassword");
+const adminCreateButton = document.getElementById("adminCreateButton");
+const adminUserTableBody = document.querySelector("#adminUserTable tbody");
 const gameArea = document.getElementById("gameArea");
 const balanceEl = document.getElementById("balance");
 const betAmountEl = document.getElementById("betAmount");
 const betTypeEl = document.getElementById("betType");
 const betRangeEl = document.getElementById("betRange");
 const numberBetRow = document.getElementById("numberBetRow");
+const topupCard = document.getElementById("topupCard");
 const topupAmountEl = document.getElementById("topupAmount");
 const addBalanceButton = document.getElementById("addBalanceButton");
 const spinButton = document.getElementById("spinButton");
@@ -37,15 +44,20 @@ const wheelColorEl = document.getElementById("wheelColor");
 const historyEl = document.getElementById("history");
 
 let currentUser = null;
-const CURRENT_USER_KEY = "roulette-current-user";
+let authToken = null;
+const CURRENT_USER_KEY = "roulette-current-token";
 let currentBalance = 1000;
 const TOPUP_LIMIT = 10000;
 const BALANCE_CAP = 50000;
 const historyLimit = 5;
 
 async function apiRequest(path, options = {}) {
+    const headers = { "Content-Type": "application/json" };
+    if (authToken) {
+        headers.Authorization = `Bearer ${authToken}`;
+    }
     const response = await fetch(path, {
-        headers: { "Content-Type": "application/json" },
+        headers,
         credentials: "same-origin",
         ...options,
     });
@@ -58,7 +70,7 @@ async function apiRequest(path, options = {}) {
 
 async function updateLeaderboard() {
     try {
-        const data = await apiRequest("/api/leaderboard");
+        const data = await apiRequest("/api/leaderboard", { method: "GET" });
         leaderboardEl.innerHTML = "";
         data.topPlayers.forEach((player) => {
             const li = document.createElement("li");
@@ -70,16 +82,34 @@ async function updateLeaderboard() {
     }
 }
 
+function showRoleUI() {
+    if (!currentUser) return;
+    if (currentUser.role === "admin") {
+        adminPanel.style.display = "block";
+        gameArea.style.display = "none";
+        topupCard.style.display = "none";
+        playerRoleEl.textContent = "(Admin)";
+    } else {
+        adminPanel.style.display = "none";
+        gameArea.style.display = "block";
+        topupCard.style.display = "none";
+        playerRoleEl.textContent = "";
+    }
+}
+
 function setCurrentUser(user) {
     currentUser = user;
     if (!currentUser) return;
     currentBalance = currentUser.balance;
     playerNameEl.textContent = currentUser.username;
     playerInfo.style.display = "flex";
-    gameArea.style.display = "block";
     authCard.style.display = "none";
     updateBalance();
+    showRoleUI();
     updateLeaderboard();
+    if (currentUser.role === "admin") {
+        updateAdminUsers();
+    }
 }
 
 async function persistUserBalance() {
@@ -98,9 +128,11 @@ async function persistUserBalance() {
 
 function logoutUser() {
     currentUser = null;
+    authToken = null;
     localStorage.removeItem(CURRENT_USER_KEY);
     gameArea.style.display = "none";
     playerInfo.style.display = "none";
+    adminPanel.style.display = "none";
     authCard.style.display = "block";
     showAuthForm("login");
     resultEl.textContent = "Siz chiqdingiz. Qaytadan tizimga kiring.";
@@ -119,6 +151,7 @@ async function deleteAccount() {
         currentUser = null;
         gameArea.style.display = "none";
         playerInfo.style.display = "none";
+        adminPanel.style.display = "none";
         authCard.style.display = "block";
         showAuthForm("login");
         updateLeaderboard();
@@ -160,7 +193,8 @@ async function handleLogin() {
             method: "POST",
             body: JSON.stringify({ username, password }),
         });
-        localStorage.setItem(CURRENT_USER_KEY, data.user.username);
+        authToken = data.token;
+        localStorage.setItem(CURRENT_USER_KEY, authToken);
         setCurrentUser(data.user);
     } catch (error) {
         alert(error.message);
@@ -207,19 +241,20 @@ async function handlePasswordReset() {
 }
 
 async function initializeAuthentication() {
-    const recentUser = localStorage.getItem(CURRENT_USER_KEY);
-    if (recentUser) {
+    const token = localStorage.getItem(CURRENT_USER_KEY);
+    if (token) {
+        authToken = token;
         try {
-            const data = await apiRequest(`/api/user/${encodeURIComponent(recentUser)}`);
+            const data = await apiRequest("/api/me");
             setCurrentUser(data.user);
+            return;
         } catch (error) {
             console.warn("Auto login failed:", error.message);
+            authToken = null;
             localStorage.removeItem(CURRENT_USER_KEY);
-            updateLeaderboard();
         }
-    } else {
-        updateLeaderboard();
     }
+    updateLeaderboard();
 }
 
 function updateBalance() {
@@ -308,6 +343,126 @@ function handleTopup() {
     addHistory(`Balancega +${amount} qo'shildi.`);
     resultEl.textContent = `Balansingizga ${amount} qo'shildi.`;
     persistUserBalance();
+}
+
+async function updateAdminUsers() {
+    if (!currentUser || currentUser.role !== "admin") return;
+    try {
+        const data = await apiRequest("/api/admin/users", { method: "POST" });
+        adminUserTableBody.innerHTML = "";
+        data.users.forEach((user) => {
+            const row = document.createElement("tr");
+            const usernameCell = document.createElement("td");
+            usernameCell.textContent = user.username;
+            const balanceCell = document.createElement("td");
+            balanceCell.textContent = user.balance;
+            const roleCell = document.createElement("td");
+            roleCell.textContent = user.role || "player";
+            const actionsCell = document.createElement("td");
+            const passButton = document.createElement("button");
+            passButton.type = "button";
+            passButton.textContent = "Reset PW";
+            passButton.addEventListener("click", () => adminSetPassword(user.username));
+            const addButton = document.createElement("button");
+            addButton.type = "button";
+            addButton.textContent = "+ Bal";
+            addButton.addEventListener("click", () => adminAdjustBalance(user.username, "add"));
+            const minusButton = document.createElement("button");
+            minusButton.type = "button";
+            minusButton.textContent = "- Bal";
+            minusButton.addEventListener("click", () => adminAdjustBalance(user.username, "subtract"));
+            const deleteButton = document.createElement("button");
+            deleteButton.type = "button";
+            deleteButton.textContent = "Delete";
+            deleteButton.addEventListener("click", () => adminDeleteUser(user.username));
+            actionsCell.appendChild(passButton);
+            actionsCell.appendChild(addButton);
+            actionsCell.appendChild(minusButton);
+            actionsCell.appendChild(deleteButton);
+            row.appendChild(usernameCell);
+            row.appendChild(balanceCell);
+            row.appendChild(roleCell);
+            row.appendChild(actionsCell);
+            adminUserTableBody.appendChild(row);
+        });
+    } catch (error) {
+        console.warn("Admin users load failed:", error.message);
+    }
+}
+
+async function adminCreatePlayer() {
+    const username = adminCreateUsernameEl.value.trim();
+    const password = adminCreatePasswordEl.value.trim();
+    if (!username || !password) {
+        alert("Iltimos, yangi foydalanuvchi nomi va parol kiriting.");
+        return;
+    }
+    try {
+        await apiRequest("/api/admin/user", {
+            method: "POST",
+            body: JSON.stringify({ username, password, role: "player", balance: 100 }),
+        });
+        adminCreateUsernameEl.value = "";
+        adminCreatePasswordEl.value = "";
+        alert("Yangi foydalanuvchi yaratildi.");
+        updateAdminUsers();
+        updateLeaderboard();
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
+async function adminSetPassword(username) {
+    const newPassword = prompt(`Yangi parol kiriting: ${username}`);
+    if (!newPassword) return;
+    try {
+        await apiRequest(`/api/admin/user/${encodeURIComponent(username)}/password`, {
+            method: "POST",
+            body: JSON.stringify({ newPassword }),
+        });
+        alert("Parol muvaffaqiyatli yangilandi.");
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
+async function adminAdjustBalance(username, operation) {
+    const rawAmount = prompt(`Qancha balans ${operation === "add" ? "qo'shmoqchisiz" : "ayirmoqchisiz"}: ${username}`);
+    if (!rawAmount) return;
+    const amount = parseInt(rawAmount, 10);
+    if (isNaN(amount) || amount < 0) {
+        alert("Iltimos, to'g'ri son kiriting.");
+        return;
+    }
+    try {
+        await apiRequest(`/api/admin/user/${encodeURIComponent(username)}/balance`, {
+            method: "POST",
+            body: JSON.stringify({ amount, operation }),
+        });
+        alert("Balans yangilandi.");
+        updateAdminUsers();
+        updateLeaderboard();
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
+async function adminDeleteUser(username) {
+    if (!confirm(`${username} hisobini o'chirishni tasdiqlaysizmi?`)) return;
+    try {
+        await apiRequest(`/api/admin/user/${encodeURIComponent(username)}`, {
+            method: "DELETE",
+        });
+        alert("Foydalanuvchi o'chirildi.");
+        if (currentUser && currentUser.username === username) {
+            logoutUser();
+            return;
+        }
+        updateAdminUsers();
+        updateLeaderboard();
+    } catch (error) {
+        alert(error.message);
+    }
 }
 
 spinButton.addEventListener("click", () => {
@@ -404,6 +559,7 @@ document.getElementById("registerButton").addEventListener("click", handleRegist
 document.getElementById("resetPasswordButton").addEventListener("click", handlePasswordReset);
 logoutButton.addEventListener("click", logoutUser);
 deleteAccountButton.addEventListener("click", deleteAccount);
+adminCreateButton.addEventListener("click", adminCreatePlayer);
 
 betTypeEl.addEventListener("change", showNumberInput);
 addBalanceButton.addEventListener("click", handleTopup);
