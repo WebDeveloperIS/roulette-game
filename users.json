@@ -11,14 +11,5 @@
     "balance": 0,
     "role": "admin",
     "lastPlayed": 1780347276683
-  },
-  "testplayer1": {
-    "username": "testplayer1",
-    "password": "password123",
-    "balance": 100,
-    "role": "player",
-    "lastPlayed": 1780347322650,
-    "muted": true,
-    "banned": true
   }
 }
