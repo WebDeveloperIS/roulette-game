@@ -42,6 +42,10 @@ const wheelEl = document.getElementById("wheel");
 const wheelNumberEl = document.getElementById("wheelNumber");
 const wheelColorEl = document.getElementById("wheelColor");
 const historyEl = document.getElementById("history");
+const chatMessagesEl = document.getElementById("chatMessages");
+const chatInputEl = document.getElementById("chatInput");
+const chatSendButton = document.getElementById("chatSendButton");
+const adminChatMessagesEl = document.getElementById("adminChatMessages");
 
 let currentUser = null;
 let authToken = null;
@@ -107,6 +111,7 @@ function setCurrentUser(user) {
     updateBalance();
     showRoleUI();
     updateLeaderboard();
+    loadChatMessages();
     if (currentUser.role === "admin") {
         updateAdminUsers();
     }
@@ -465,6 +470,51 @@ async function adminDeleteUser(username) {
     }
 }
 
+async function loadChatMessages() {
+    try {
+        const data = await apiRequest("/api/chat/messages");
+        const messagesContainer = currentUser.role === "admin" ? adminChatMessagesEl : chatMessagesEl;
+        messagesContainer.innerHTML = "";
+        data.messages.forEach((msg) => {
+            const messageDiv = document.createElement("div");
+            if (currentUser.role === "admin") {
+                messageDiv.className = "admin-chat-message";
+                const timeStr = new Date(msg.timestamp).toLocaleTimeString();
+                messageDiv.innerHTML = `<span class="admin-chat-message-user">${msg.username}</span><span class="admin-chat-message-time">${timeStr}</span><br>${msg.message}`;
+            } else {
+                messageDiv.className = "chat-message";
+                messageDiv.innerHTML = `<span class="chat-message-user">${msg.username}</span>: ${msg.message}`;
+            }
+            messagesContainer.appendChild(messageDiv);
+        });
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    } catch (error) {
+        console.warn("Chat load failed:", error.message);
+    }
+}
+
+async function sendChatMessage() {
+    const message = chatInputEl.value.trim();
+    if (!message) return;
+    try {
+        await apiRequest("/api/chat/send", {
+            method: "POST",
+            body: JSON.stringify({ message }),
+        });
+        chatInputEl.value = "";
+        loadChatMessages();
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
+function startChatPolling() {
+    if (currentUser && (currentUser.role === "admin" || currentUser.role === "player")) {
+        loadChatMessages();
+        setInterval(() => loadChatMessages(), 2000);
+    }
+}
+
 spinButton.addEventListener("click", () => {
     const bet = parseInt(betAmountEl.value, 10);
     const betType = betTypeEl.value;
@@ -564,9 +614,16 @@ adminCreateButton.addEventListener("click", adminCreatePlayer);
 betTypeEl.addEventListener("change", showNumberInput);
 addBalanceButton.addEventListener("click", handleTopup);
 resetButton.addEventListener("click", resetGame);
+chatSendButton.addEventListener("click", sendChatMessage);
+chatInputEl.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+        sendChatMessage();
+    }
+});
 
 initializeAuthentication();
 showAuthForm("login");
 showNumberInput();
 updateBalance();
+startChatPolling();
 

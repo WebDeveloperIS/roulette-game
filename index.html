@@ -101,6 +101,10 @@
                     <tbody></tbody>
                 </table>
             </div>
+            <div class="admin-card">
+                <h3>All Chat Messages</h3>
+                <div id="adminChatMessages" class="admin-chat-messages"></div>
+            </div>
         </div>
 
         <div id="gameArea" style="display:none;">
@@ -162,6 +166,15 @@
         <div class="history-card">
             <h2>History</h2>
             <ul id="history"></ul>
+        </div>
+
+        <div class="chat-card">
+            <h2>Chat</h2>
+            <div id="chatMessages" class="chat-messages"></div>
+            <div class="chat-input-row">
+                <input type="text" id="chatInput" placeholder="Enter your message..." autocomplete="off" maxlength="200">
+                <button type="button" id="chatSendButton">Send</button>
+            </div>
         </div>
         </div>
 

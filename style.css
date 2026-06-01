@@ -421,6 +421,115 @@ button.secondary:hover {
     font-size: 0.95rem;
 }
 
+.chat-card {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    padding: 20px;
+    margin-bottom: 18px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 400px;
+}
+
+.chat-card h2 {
+    margin-top: 0;
+    margin-bottom: 0;
+    font-size: 1.4rem;
+    color: #ffd700;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    min-height: 200px;
+    max-height: 300px;
+}
+
+.chat-message {
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border-left: 3px solid #ffd700;
+    color: #ddd;
+    font-size: 0.95rem;
+}
+
+.chat-message-user {
+    font-weight: 700;
+    color: #ffd700;
+}
+
+.chat-message-time {
+    font-size: 0.85rem;
+    color: #999;
+    margin-left: 8px;
+}
+
+.chat-input-row {
+    display: flex;
+    gap: 8px;
+}
+
+#chatInput {
+    flex: 1;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    font-size: 1rem;
+    outline: none;
+}
+
+#chatInput:focus {
+    border-color: rgba(255, 215, 0, 0.8);
+    background: rgba(255, 255, 255, 0.14);
+}
+
+#chatSendButton {
+    width: auto;
+    padding: 12px 20px;
+    font-size: 1rem;
+}
+
+.admin-chat-messages {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.admin-chat-message {
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border-left: 3px solid #47d147;
+    font-size: 0.95rem;
+    color: #ddd;
+}
+
+.admin-chat-message-user {
+    font-weight: 700;
+    color: #47d147;
+}
+
+.admin-chat-message-time {
+    font-size: 0.85rem;
+    color: #999;
+    margin-left: 8px;
+}
+
 @media (max-width: 520px) {
     .container {
         padding: 18px 14px 26px;

@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const app = express();
 const PORT = process.env.PORT || 3000;
 const DATA_FILE = path.join(__dirname, "users.json");
+const CHAT_FILE = path.join(__dirname, "chat.json");
 const sessions = {};
 
 function loadUsers() {
@@ -23,6 +24,23 @@ function loadUsers() {
 
 function saveUsers(users) {
     fs.writeFileSync(DATA_FILE, JSON.stringify(users, null, 2), "utf8");
+}
+
+function loadChat() {
+    if (!fs.existsSync(CHAT_FILE)) {
+        return [];
+    }
+    try {
+        const raw = fs.readFileSync(CHAT_FILE, "utf8");
+        return raw ? JSON.parse(raw) : [];
+    } catch (error) {
+        console.error("Failed to load chat:", error);
+        return [];
+    }
+}
+
+function saveChat(messages) {
+    fs.writeFileSync(CHAT_FILE, JSON.stringify(messages, null, 2), "utf8");
 }
 
 function safeUser(user) {
@@ -270,6 +288,39 @@ app.delete("/api/user/:username", authenticate, (req, res) => {
     delete users[username];
     saveUsers(users);
     res.json({ message: "User deleted" });
+});
+
+app.post("/api/chat/send", authenticate, (req, res) => {
+    const { message } = req.body;
+    if (!message || typeof message !== "string" || message.trim().length === 0) {
+        return res.status(400).json({ message: "Message is required" });
+    }
+    const chat = loadChat();
+    const newMessage = {
+        id: crypto.randomBytes(8).toString("hex"),
+        username: req.user.username,
+        message: message.trim().substring(0, 200),
+        timestamp: Date.now(),
+    };
+    chat.push(newMessage);
+    saveChat(chat);
+    res.json(newMessage);
+});
+
+app.get("/api/chat/messages", authenticate, (req, res) => {
+    const chat = loadChat();
+    const limit = 50;
+    const messages = chat.slice(Math.max(0, chat.length - limit));
+    if (req.user.role === "admin") {
+        res.json({ messages });
+    } else {
+        res.json({ messages: messages.map((msg) => ({ ...msg })) });
+    }
+});
+
+app.get("/api/chat/all", authenticate, adminOnly, (req, res) => {
+    const chat = loadChat();
+    res.json({ messages: chat });
 });
 
 app.use((req, res) => {
