@@ -153,6 +153,8 @@ button.danger {
 
 .admin-panel {
     margin-bottom: 18px;
+    display: grid;
+    gap: 18px;
 }
 
 .admin-card h2,
@@ -163,11 +165,28 @@ button.danger {
     color: #ffd700;
 }
 
+.admin-card .bet-row {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    align-items: end;
+}
+
+.admin-card .bet-row label {
+    margin-bottom: 0;
+}
+
+.admin-card .bet-row button {
+    margin-top: 0;
+}
+
 #adminUserTable {
     width: 100%;
     border-collapse: collapse;
     color: #fff;
     margin-top: 12px;
+    display: block;
+    overflow-x: auto;
 }
 
 #adminUserTable th,
@@ -176,6 +195,8 @@ button.danger {
     padding: 10px;
     text-align: left;
     font-size: 0.95rem;
+    white-space: nowrap;
+    vertical-align: middle;
 }
 
 #adminUserTable th {
@@ -184,8 +205,16 @@ button.danger {
 
 #adminUserTable button {
     width: auto;
-    padding: 8px 12px;
+    margin: 4px 6px 4px 0;
+    padding: 8px 10px;
     font-size: 0.85rem;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+#adminUserTable button:hover {
+    background: rgba(255, 255, 255, 0.16);
 }
 
 .balance-card {
