@@ -17,6 +17,8 @@
     "password": "password123",
     "balance": 100,
     "role": "player",
-    "lastPlayed": 1780347322650
+    "lastPlayed": 1780347322650,
+    "muted": true,
+    "banned": true
   }
 }

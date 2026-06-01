@@ -217,6 +217,40 @@ button.danger {
     background: rgba(255, 255, 255, 0.16);
 }
 
+#adminUserTable button.warning {
+    background: rgba(255, 215, 0, 0.2);
+    color: #ffd700;
+}
+
+#adminUserTable button.warning:hover {
+    background: rgba(255, 215, 0, 0.3);
+}
+
+#adminUserTable button.danger {
+    background: rgba(255, 100, 100, 0.2);
+    color: #ff6464;
+}
+
+#adminUserTable button.danger:hover {
+    background: rgba(255, 100, 100, 0.3);
+}
+
+.admin-delete-msg-btn {
+    background: rgba(255, 100, 100, 0.3) !important;
+    color: #ff6464 !important;
+    border: none;
+    font-size: 0.9rem;
+    padding: 2px 8px !important;
+    margin-left: 8px !important;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.admin-delete-msg-btn:hover {
+    background: rgba(255, 100, 100, 0.5) !important;
+}
+
+
 .balance-card {
     display: flex;
     justify-content: space-between;

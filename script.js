@@ -364,26 +364,52 @@ async function updateAdminUsers() {
             const roleCell = document.createElement("td");
             roleCell.textContent = user.role || "player";
             const actionsCell = document.createElement("td");
+            
             const passButton = document.createElement("button");
             passButton.type = "button";
             passButton.textContent = "Reset PW";
             passButton.addEventListener("click", () => adminSetPassword(user.username));
+            
             const addButton = document.createElement("button");
             addButton.type = "button";
             addButton.textContent = "+ Bal";
             addButton.addEventListener("click", () => adminAdjustBalance(user.username, "add"));
+            
             const minusButton = document.createElement("button");
             minusButton.type = "button";
             minusButton.textContent = "- Bal";
             minusButton.addEventListener("click", () => adminAdjustBalance(user.username, "subtract"));
+            
+            const muteButton = document.createElement("button");
+            muteButton.type = "button";
+            muteButton.textContent = user.muted ? "Unmute" : "Mute";
+            muteButton.className = user.muted ? "warning" : "";
+            muteButton.addEventListener("click", () => adminToggleMute(user.username, user.muted));
+            
+            const kickButton = document.createElement("button");
+            kickButton.type = "button";
+            kickButton.textContent = "Kick";
+            kickButton.addEventListener("click", () => adminKickUser(user.username));
+            
+            const banButton = document.createElement("button");
+            banButton.type = "button";
+            banButton.textContent = user.banned ? "Unban" : "Ban";
+            banButton.className = user.banned ? "danger" : "";
+            banButton.addEventListener("click", () => adminToggleBan(user.username, user.banned));
+            
             const deleteButton = document.createElement("button");
             deleteButton.type = "button";
             deleteButton.textContent = "Delete";
             deleteButton.addEventListener("click", () => adminDeleteUser(user.username));
+            
             actionsCell.appendChild(passButton);
             actionsCell.appendChild(addButton);
             actionsCell.appendChild(minusButton);
+            actionsCell.appendChild(muteButton);
+            actionsCell.appendChild(kickButton);
+            actionsCell.appendChild(banButton);
             actionsCell.appendChild(deleteButton);
+            
             row.appendChild(usernameCell);
             row.appendChild(balanceCell);
             row.appendChild(roleCell);
@@ -470,6 +496,58 @@ async function adminDeleteUser(username) {
     }
 }
 
+async function adminToggleMute(username, isMuted) {
+    const endpoint = isMuted ? "unmute" : "mute";
+    try {
+        await apiRequest(`/api/admin/user/${encodeURIComponent(username)}/${endpoint}`, {
+            method: "POST",
+        });
+        alert(`${username} ${isMuted ? "unmuted" : "muted"} qilindi.`);
+        updateAdminUsers();
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
+async function adminKickUser(username) {
+    if (!confirm(`${username} ni out qilishni tasdiqlaysizmi?`)) return;
+    try {
+        await apiRequest(`/api/admin/user/${encodeURIComponent(username)}/kick`, {
+            method: "POST",
+        });
+        alert(`${username} out qilindi.`);
+        updateAdminUsers();
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
+async function adminToggleBan(username, isBanned) {
+    const endpoint = isBanned ? "unban" : "ban";
+    if (!isBanned && !confirm(`${username} ni ban qilishni tasdiqlaysizmi?`)) return;
+    try {
+        await apiRequest(`/api/admin/user/${encodeURIComponent(username)}/${endpoint}`, {
+            method: "POST",
+        });
+        alert(`${username} ${isBanned ? "unbanned" : "banned"} qilindi.`);
+        updateAdminUsers();
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
+async function adminDeleteMessage(messageId) {
+    if (!confirm("Xabarni o'chirishni tasdiqlaysizmi?")) return;
+    try {
+        await apiRequest(`/api/admin/chat/${encodeURIComponent(messageId)}`, {
+            method: "DELETE",
+        });
+        loadChatMessages();
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
 async function loadChatMessages() {
     try {
         const data = await apiRequest("/api/chat/messages");
@@ -480,7 +558,14 @@ async function loadChatMessages() {
             if (currentUser.role === "admin") {
                 messageDiv.className = "admin-chat-message";
                 const timeStr = new Date(msg.timestamp).toLocaleTimeString();
-                messageDiv.innerHTML = `<span class="admin-chat-message-user">${msg.username}</span><span class="admin-chat-message-time">${timeStr}</span><br>${msg.message}`;
+                const deleteBtn = document.createElement("button");
+                deleteBtn.type = "button";
+                deleteBtn.textContent = "✕";
+                deleteBtn.className = "admin-delete-msg-btn";
+                deleteBtn.addEventListener("click", () => adminDeleteMessage(msg.id));
+                messageDiv.innerHTML = `<span class="admin-chat-message-user">${msg.username}</span><span class="admin-chat-message-time">${timeStr}</span>`;
+                messageDiv.appendChild(deleteBtn);
+                messageDiv.innerHTML += `<br>${msg.message}`;
             } else {
                 messageDiv.className = "chat-message";
                 messageDiv.innerHTML = `<span class="chat-message-user">${msg.username}</span>: ${msg.message}`;

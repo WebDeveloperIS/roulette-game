@@ -240,6 +240,8 @@ app.post("/api/register", (req, res) => {
         password,
         balance: 100,
         role: "player",
+        muted: false,
+        banned: false,
         lastPlayed: Date.now(),
     };
     saveUsers(users);
@@ -255,6 +257,9 @@ app.post("/api/login", (req, res) => {
     const user = users[username];
     if (!user || user.password !== password) {
         return res.status(401).json({ message: "Invalid username or password" });
+    }
+    if (user.banned) {
+        return res.status(403).json({ message: "Account is banned" });
     }
     const token = createSession(username);
     res.json({ user: safeUser(user), token });
@@ -295,6 +300,9 @@ app.post("/api/chat/send", authenticate, (req, res) => {
     if (!message || typeof message !== "string" || message.trim().length === 0) {
         return res.status(400).json({ message: "Message is required" });
     }
+    if (req.user.muted) {
+        return res.status(403).json({ message: "You are muted" });
+    }
     const chat = loadChat();
     const newMessage = {
         id: crypto.randomBytes(8).toString("hex"),
@@ -321,6 +329,74 @@ app.get("/api/chat/messages", authenticate, (req, res) => {
 app.get("/api/chat/all", authenticate, adminOnly, (req, res) => {
     const chat = loadChat();
     res.json({ messages: chat });
+});
+
+app.delete("/api/admin/chat/:messageId", authenticate, adminOnly, (req, res) => {
+    const messageId = req.params.messageId;
+    const chat = loadChat();
+    const index = chat.findIndex((msg) => msg.id === messageId);
+    if (index === -1) {
+        return res.status(404).json({ message: "Message not found" });
+    }
+    chat.splice(index, 1);
+    saveChat(chat);
+    res.json({ message: "Message deleted" });
+});
+
+app.post("/api/admin/user/:username/mute", authenticate, adminOnly, (req, res) => {
+    const username = req.params.username;
+    const users = loadUsers();
+    if (!users[username]) {
+        return res.status(404).json({ message: "User not found" });
+    }
+    users[username].muted = true;
+    saveUsers(users);
+    res.json({ message: `${username} is muted` });
+});
+
+app.post("/api/admin/user/:username/unmute", authenticate, adminOnly, (req, res) => {
+    const username = req.params.username;
+    const users = loadUsers();
+    if (!users[username]) {
+        return res.status(404).json({ message: "User not found" });
+    }
+    users[username].muted = false;
+    saveUsers(users);
+    res.json({ message: `${username} is unmuted` });
+});
+
+app.post("/api/admin/user/:username/ban", authenticate, adminOnly, (req, res) => {
+    const username = req.params.username;
+    const users = loadUsers();
+    if (!users[username]) {
+        return res.status(404).json({ message: "User not found" });
+    }
+    users[username].banned = true;
+    saveUsers(users);
+    res.json({ message: `${username} is banned` });
+});
+
+app.post("/api/admin/user/:username/unban", authenticate, adminOnly, (req, res) => {
+    const username = req.params.username;
+    const users = loadUsers();
+    if (!users[username]) {
+        return res.status(404).json({ message: "User not found" });
+    }
+    users[username].banned = false;
+    saveUsers(users);
+    res.json({ message: `${username} is unbanned` });
+});
+
+app.post("/api/admin/user/:username/kick", authenticate, adminOnly, (req, res) => {
+    const username = req.params.username;
+    const tokensToDelete = [];
+    for (const token in sessions) {
+        if (sessions[token].username === username) {
+            tokensToDelete.push(token);
+        }
+    }
+    tokensToDelete.forEach((token) => delete sessions[token]);
+    res.json({ message: `${username} has been kicked` });
 });
 
 app.use((req, res) => {
