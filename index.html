@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roulette Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Roulette Game</h1>
+            <p>Login or register to play and save your top score.</p>
+        </header>
+
+        <div class="auth-card" id="authCard">
+            <div class="auth-tabs">
+                <button id="loginTab" class="active">Login</button>
+                <button id="registerTab">Register</button>
+                <button id="resetTab">Reset Password</button>
+            </div>
+
+            <form id="loginForm" class="auth-form">
+                <label>
+                    Username
+                    <input type="text" id="loginUsername" placeholder="Enter username" autocomplete="username">
+                </label>
+                <label>
+                    Password
+                    <input type="password" id="loginPassword" placeholder="Enter password" autocomplete="current-password">
+                </label>
+                <button type="button" id="loginButton">Login</button>
+            </form>
+
+            <form id="registerForm" class="auth-form" style="display:none;">
+                <label>
+                    Username
+                    <input type="text" id="registerUsername" placeholder="Choose username" autocomplete="username">
+                </label>
+                <label>
+                    Password
+                    <input type="password" id="registerPassword" placeholder="Choose password" autocomplete="new-password">
+                </label>
+                <button type="button" id="registerButton">Register</button>
+            </form>
+
+            <form id="resetForm" class="auth-form" style="display:none;">
+                <label>
+                    Username
+                    <input type="text" id="resetUsername" placeholder="Enter username" autocomplete="username">
+                </label>
+                <label>
+                    Current Password
+                    <input type="password" id="resetCurrentPassword" placeholder="Current password" autocomplete="current-password">
+                </label>
+                <label>
+                    New Password
+                    <input type="password" id="resetNewPassword" placeholder="New password" autocomplete="new-password">
+                </label>
+                <button type="button" id="resetPasswordButton">Reset Password</button>
+            </form>
+        </div>
+
+        <div class="player-info" id="playerInfo" style="display:none;">
+            Player: <strong id="playerName">Guest</strong>
+            <div class="player-actions">
+                <button type="button" id="logoutButton" class="secondary small">Logout</button>
+                <button type="button" id="deleteAccountButton" class="secondary small danger">Delete Account</button>
+            </div>
+        </div>
+
+        <div id="gameArea" style="display:none;">
+        <div class="balance-card">
+            <span>Balance:</span>
+            <strong id="balance">1000</strong>
+        </div>
+
+        <div class="topup-card">
+            <div class="bet-row">
+                <label for="topupAmount">Top-up Amount</label>
+                <input type="number" id="topupAmount" placeholder="100" min="100" max="10000" value="100">
+            </div>
+            <button type="button" id="addBalanceButton" class="secondary">Add Balance</button>
+        </div>
+
+        <div class="betting-card">
+            <h2>Place Your Bet</h2>
+            <div class="bet-row">
+                <label for="betAmount">Amount</label>
+                <input type="number" id="betAmount" placeholder="100" min="100" value="100">
+            </div>
+            <div class="bet-row">
+                <label for="betType">Bet On</label>
+                <select id="betType">
+                    <option value="red">Red (2x)</option>
+                    <option value="black">Black (2x)</option>
+                    <option value="range">Range (3x)</option>
+                </select>
+            </div>
+            <div class="bet-row" id="numberBetRow" style="display:none;">
+                <label for="betRange">Choose Range</label>
+                <select id="betRange">
+                    <option value="0">0</option>
+                    <option value="1-10">1-10</option>
+                    <option value="11-20">11-20</option>
+                    <option value="21-36">21-36</option>
+                </select>
+            </div>
+            <button id="spinButton">Spin Roulette</button>
+            <button id="resetButton" class="secondary">Reset Game</button>
+        </div>
+
+        <div class="result-card">
+            <h2>Result</h2>
+            <div class="roulette-wheel" id="wheel">
+                <div class="wheel-face">
+                    <span id="wheelNumber">-</span>
+                    <small id="wheelColor">-</small>
+                </div>
+            </div>
+            <p id="result">Make a bet to start playing.</p>
+            <div class="board">
+                <span id="outcomeNumber">-</span>
+                <span id="outcomeColor">-</span>
+            </div>
+        </div>
+
+        <div class="history-card">
+            <h2>History</h2>
+            <ul id="history"></ul>
+        </div>
+        </div>
+
+        <div class="leaderboard-card">
+            <h2>Top Players</h2>
+            <ol id="leaderboard"></ol>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

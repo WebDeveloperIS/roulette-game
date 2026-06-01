@@ -1,0 +1,416 @@
+const authCard = document.getElementById("authCard");
+const loginTab = document.getElementById("loginTab");
+const registerTab = document.getElementById("registerTab");
+const loginForm = document.getElementById("loginForm");
+const registerForm = document.getElementById("registerForm");
+const loginUsernameEl = document.getElementById("loginUsername");
+const loginPasswordEl = document.getElementById("loginPassword");
+const registerUsernameEl = document.getElementById("registerUsername");
+const registerPasswordEl = document.getElementById("registerPassword");
+const resetTab = document.getElementById("resetTab");
+const resetForm = document.getElementById("resetForm");
+const resetUsernameEl = document.getElementById("resetUsername");
+const resetCurrentPasswordEl = document.getElementById("resetCurrentPassword");
+const resetNewPasswordEl = document.getElementById("resetNewPassword");
+const resetPasswordButton = document.getElementById("resetPasswordButton");
+const playerInfo = document.getElementById("playerInfo");
+const playerNameEl = document.getElementById("playerName");
+const logoutButton = document.getElementById("logoutButton");
+const deleteAccountButton = document.getElementById("deleteAccountButton");
+const leaderboardEl = document.getElementById("leaderboard");
+const gameArea = document.getElementById("gameArea");
+const balanceEl = document.getElementById("balance");
+const betAmountEl = document.getElementById("betAmount");
+const betTypeEl = document.getElementById("betType");
+const betRangeEl = document.getElementById("betRange");
+const numberBetRow = document.getElementById("numberBetRow");
+const topupAmountEl = document.getElementById("topupAmount");
+const addBalanceButton = document.getElementById("addBalanceButton");
+const spinButton = document.getElementById("spinButton");
+const resetButton = document.getElementById("resetButton");
+const resultEl = document.getElementById("result");
+const outcomeNumberEl = document.getElementById("outcomeNumber");
+const outcomeColorEl = document.getElementById("outcomeColor");
+const wheelEl = document.getElementById("wheel");
+const wheelNumberEl = document.getElementById("wheelNumber");
+const wheelColorEl = document.getElementById("wheelColor");
+const historyEl = document.getElementById("history");
+
+let currentUser = null;
+const CURRENT_USER_KEY = "roulette-current-user";
+let currentBalance = 1000;
+const TOPUP_LIMIT = 10000;
+const BALANCE_CAP = 50000;
+const historyLimit = 5;
+
+async function apiRequest(path, options = {}) {
+    const response = await fetch(path, {
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        ...options,
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(data.message || "Server error");
+    }
+    return data;
+}
+
+async function updateLeaderboard() {
+    try {
+        const data = await apiRequest("/api/leaderboard");
+        leaderboardEl.innerHTML = "";
+        data.topPlayers.forEach((player) => {
+            const li = document.createElement("li");
+            li.textContent = `${player.username} — ${player.balance}`;
+            leaderboardEl.appendChild(li);
+        });
+    } catch (error) {
+        console.warn("Leaderboard load failed:", error.message);
+    }
+}
+
+function setCurrentUser(user) {
+    currentUser = user;
+    if (!currentUser) return;
+    currentBalance = currentUser.balance;
+    playerNameEl.textContent = currentUser.username;
+    playerInfo.style.display = "flex";
+    gameArea.style.display = "block";
+    authCard.style.display = "none";
+    updateBalance();
+    updateLeaderboard();
+}
+
+async function persistUserBalance() {
+    if (!currentUser) return;
+    try {
+        const data = await apiRequest(`/api/user/${encodeURIComponent(currentUser.username)}/balance`, {
+            method: "POST",
+            body: JSON.stringify({ balance: currentBalance }),
+        });
+        currentUser.balance = data.balance;
+        updateLeaderboard();
+    } catch (error) {
+        console.warn("Balance persist failed:", error.message);
+    }
+}
+
+function logoutUser() {
+    currentUser = null;
+    localStorage.removeItem(CURRENT_USER_KEY);
+    gameArea.style.display = "none";
+    playerInfo.style.display = "none";
+    authCard.style.display = "block";
+    showAuthForm("login");
+    resultEl.textContent = "Siz chiqdingiz. Qaytadan tizimga kiring.";
+}
+
+async function deleteAccount() {
+    if (!currentUser) return;
+    if (!confirm(`Haqiqatan ${currentUser.username} hisobini o'chirmoqchimisiz?`)) {
+        return;
+    }
+    try {
+        await apiRequest(`/api/user/${encodeURIComponent(currentUser.username)}`, {
+            method: "DELETE",
+        });
+        localStorage.removeItem(CURRENT_USER_KEY);
+        currentUser = null;
+        gameArea.style.display = "none";
+        playerInfo.style.display = "none";
+        authCard.style.display = "block";
+        showAuthForm("login");
+        updateLeaderboard();
+        alert("Hisob muvaffaqiyatli o'chirildi.");
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
+function showAuthForm(type) {
+    loginForm.style.display = "none";
+    registerForm.style.display = "none";
+    resetForm.style.display = "none";
+    loginTab.classList.remove("active");
+    registerTab.classList.remove("active");
+    resetTab.classList.remove("active");
+
+    if (type === "login") {
+        loginForm.style.display = "block";
+        loginTab.classList.add("active");
+    } else if (type === "register") {
+        registerForm.style.display = "block";
+        registerTab.classList.add("active");
+    } else {
+        resetForm.style.display = "block";
+        resetTab.classList.add("active");
+    }
+}
+
+async function handleLogin() {
+    const username = loginUsernameEl.value.trim();
+    const password = loginPasswordEl.value.trim();
+    if (!username || !password) {
+        alert("Iltimos, foydalanuvchi nomi va parolni kiriting.");
+        return;
+    }
+    try {
+        const data = await apiRequest("/api/login", {
+            method: "POST",
+            body: JSON.stringify({ username, password }),
+        });
+        localStorage.setItem(CURRENT_USER_KEY, data.user.username);
+        setCurrentUser(data.user);
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
+async function handleRegister() {
+    const username = registerUsernameEl.value.trim();
+    const password = registerPasswordEl.value.trim();
+    if (!username || !password) {
+        alert("Iltimos, foydalanuvchi nomi va parolni kiriting.");
+        return;
+    }
+    try {
+        await apiRequest("/api/register", {
+            method: "POST",
+            body: JSON.stringify({ username, password }),
+        });
+        alert("Ro'yxatdan o'tish muvaffaqiyatli. Endi tizimga kiring.");
+        showAuthForm("login");
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
+async function handlePasswordReset() {
+    const username = resetUsernameEl.value.trim();
+    const currentPassword = resetCurrentPasswordEl.value.trim();
+    const newPassword = resetNewPasswordEl.value.trim();
+    if (!username || !currentPassword || !newPassword) {
+        alert("Iltimos, barcha maydonlarni to'ldiring.");
+        return;
+    }
+    try {
+        await apiRequest("/api/reset-password", {
+            method: "POST",
+            body: JSON.stringify({ username, currentPassword, newPassword }),
+        });
+        alert("Parolingiz muvaffaqiyatli yangilandi. Iltimos, qayta tizimga kiring.");
+        showAuthForm("login");
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
+async function initializeAuthentication() {
+    const recentUser = localStorage.getItem(CURRENT_USER_KEY);
+    if (recentUser) {
+        try {
+            const data = await apiRequest(`/api/user/${encodeURIComponent(recentUser)}`);
+            setCurrentUser(data.user);
+        } catch (error) {
+            console.warn("Auto login failed:", error.message);
+            localStorage.removeItem(CURRENT_USER_KEY);
+            updateLeaderboard();
+        }
+    } else {
+        updateLeaderboard();
+    }
+}
+
+function updateBalance() {
+    balanceEl.textContent = currentBalance;
+}
+
+function getRouletteOutcome() {
+    const number = Math.floor(Math.random() * 37);
+    let color;
+    if (number === 0) {
+        color = "green";
+    } else if (number % 2 === 0) {
+        color = "black";
+    } else {
+        color = "red";
+    }
+    return { number, color };
+}
+
+function payoutMultiplier(betType) {
+    if (betType === "green") return 0;
+    if (betType === "range") return 3;
+    return 2;
+}
+
+function addHistory(message) {
+    const li = document.createElement("li");
+    li.textContent = message;
+    historyEl.prepend(li);
+    while (historyEl.children.length > historyLimit) {
+        historyEl.removeChild(historyEl.lastChild);
+    }
+}
+
+function betColorSettings(color) {
+    if (color === "red") return { text: "#ff4d4d", wheel: "radial-gradient(circle, #ff4d4d 0%, #700000 60%)" };
+    if (color === "black") return { text: "#999", wheel: "radial-gradient(circle, #666 0%, #111 60%)" };
+    if (color === "green") return { text: "#47d147", wheel: "radial-gradient(circle, #47d147 0%, #0b3f0b 60%)" };
+    return { text: "#fff", wheel: "radial-gradient(circle, #2d2d2d 0%, #131313 65%)" };
+}
+
+function showNumberInput() {
+    numberBetRow.style.display = betTypeEl.value === "range" ? "grid" : "none";
+}
+
+function updateWheelDisplay(number, color) {
+    const settings = betColorSettings(color);
+    wheelEl.style.background = settings.wheel;
+    wheelNumberEl.textContent = number;
+    wheelColorEl.textContent = color ? color.toUpperCase() : "-";
+    wheelColorEl.style.color = settings.text;
+}
+
+function resetGame() {
+    currentBalance = 1000;
+    if (currentUser) {
+        persistUserBalance();
+    }
+    spinButton.disabled = false;
+    resultEl.textContent = "Game reset. Make a bet to start playing.";
+    updateBalance();
+    historyEl.innerHTML = "";
+    betRangeEl.value = "0";
+    topupAmountEl.value = "100";
+    topupAmountEl.value = "100";
+    showNumberInput();
+    updateWheelDisplay("-", null);
+}
+
+function handleTopup() {
+    const amount = parseInt(topupAmountEl.value, 10);
+    if (isNaN(amount) || amount < 100) {
+        alert("Iltimos, kamida 100 ball balansga qo'shing.");
+        return;
+    }
+    if (amount > TOPUP_LIMIT) {
+        alert(`Top-up miqdori maksimal ${TOPUP_LIMIT} dan oshmasligi kerak.`);
+        return;
+    }
+    if (currentBalance + amount > BALANCE_CAP) {
+        alert(`Balansingiz maksimal ${BALANCE_CAP} dan oshmasligi kerak.`);
+        return;
+    }
+    currentBalance += amount;
+    updateBalance();
+    addHistory(`Balancega +${amount} qo'shildi.`);
+    resultEl.textContent = `Balansingizga ${amount} qo'shildi.`;
+    persistUserBalance();
+}
+
+spinButton.addEventListener("click", () => {
+    const bet = parseInt(betAmountEl.value, 10);
+    const betType = betTypeEl.value;
+
+    if (isNaN(bet) || bet < 100) {
+        alert("Iltimos, kamida 100 ball tikishni kiriting.");
+        return;
+    }
+
+    if (bet > currentBalance) {
+        alert("Sizda yetarli balans yo'q.");
+        return;
+    }
+
+    let guessedRange = null;
+    if (betType === "range") {
+        guessedRange = betRangeEl.value;
+        const validRanges = ["0", "1-10", "11-20", "21-36"];
+        if (!validRanges.includes(guessedRange)) {
+            alert("Iltimos, diapazonni tanlang.");
+            return;
+        }
+    }
+
+    spinButton.disabled = true;
+    wheelEl.classList.add("spin");
+    const { number, color } = getRouletteOutcome();
+    const multiplier = payoutMultiplier(betType);
+    let won = false;
+    if (betType === "range") {
+        if (guessedRange === "0") {
+            won = number === 0;
+        } else if (guessedRange === "1-10") {
+            won = number >= 1 && number <= 10;
+        } else if (guessedRange === "11-20") {
+            won = number >= 11 && number <= 20;
+        } else if (guessedRange === "21-36") {
+            won = number >= 21 && number <= 36;
+        }
+    } else {
+        won = betType === color;
+    }
+    let message;
+
+    setTimeout(() => {
+        wheelEl.classList.remove("spin");
+        if (won) {
+            const winAmount = bet * (multiplier - 1);
+            currentBalance += winAmount;
+            if (betType === "range") {
+                message = `Yutuq! ${number} chiqdi - Siz ${winAmount} pul topdingiz.`;
+            } else {
+                message = `Yutuq! ${number} (${color}) - Siz ${winAmount} pul topdingiz.`;
+            }
+        } else {
+            currentBalance -= bet;
+            if (betType === "range") {
+                message = `Mag'lubiyat. ${number} chiqdi - Siz ${bet} pul yo'qotdingiz.`;
+            } else {
+                message = `Mag'lubiyat. ${number} (${color}) - Siz ${bet} pul yo'qotdingiz.`;
+            }
+        }
+
+        outcomeNumberEl.textContent = number;
+        outcomeColorEl.textContent = color.toUpperCase();
+        const colorSettings = betColorSettings(color);
+        outcomeColorEl.style.color = colorSettings.text;
+        resultEl.textContent = message;
+        updateWheelDisplay(number, color);
+        updateBalance();
+        const historyMessage = betType === "range"
+            ? `Bet ${bet} on ${guessedRange}, result ${number} (${color}) — ${won ? `+${bet * (multiplier - 1)}` : `-${bet}`}`
+            : `Bet ${bet} on ${betType}, result ${number} (${color}) — ${won ? `+${bet * (multiplier - 1)}` : `-${bet}`}`;
+        addHistory(historyMessage);
+
+        if (currentBalance <= 0) {
+            alert("Sizning balansingiz tugadi. O'yin tugadi.");
+            spinButton.disabled = true;
+        } else {
+            spinButton.disabled = false;
+        }
+        persistUserBalance();
+    }, 1100);
+});
+
+loginTab.addEventListener("click", () => showAuthForm("login"));
+registerTab.addEventListener("click", () => showAuthForm("register"));
+resetTab.addEventListener("click", () => showAuthForm("reset"));
+
+document.getElementById("loginButton").addEventListener("click", handleLogin);
+document.getElementById("registerButton").addEventListener("click", handleRegister);
+document.getElementById("resetPasswordButton").addEventListener("click", handlePasswordReset);
+logoutButton.addEventListener("click", logoutUser);
+deleteAccountButton.addEventListener("click", deleteAccount);
+
+betTypeEl.addEventListener("change", showNumberInput);
+addBalanceButton.addEventListener("click", handleTopup);
+resetButton.addEventListener("click", resetGame);
+
+initializeAuthentication();
+showAuthForm("login");
+showNumberInput();
+updateBalance();
+
